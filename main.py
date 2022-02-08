@@ -1,10 +1,14 @@
 import lexico 
-#from sintatico import sintatico
+import sintatico
 
 def AL(fileMjava):
-    al = lexico.Lexico(fileMjava)
-    al.executaLexico()
-    al.close()
+    aLexico = lexico.Lexico(fileMjava)
+    aLexico.executaLexico()
+    aLexico.close()
+    
+    aSintatico = sintatico.Sintatico(fileMjava)
+    aSintatico.executaSintatico()
+    aSintatico.close()
 
 
 if __name__ == '__main__':
