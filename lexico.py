@@ -56,12 +56,9 @@ class Lexico:
         self.mainClass()
         
         #converte o datagrama para arquivo de texto
-        
-        #self.saida.to_csv(r'Analise Léxica.txt', header=None, index=None, sep=' ', mode='a')
-        #self.errosLexicos.to_csv(r'Erros Léxicos.txt', header=None, index=None, sep=' ', mode='a')
-        print(self.saida)
-        print(self.errosLexicos)
-        print(self.operators)
+        self.saida.to_csv(r'Analise Léxica.txt', header=None, index=None, sep=' ', mode='a')
+        self.errosLexicos.to_csv(r'Erros Léxicos.txt', header=None, index=None, sep=' ', mode='a')
+      
     
     
     def mainClass(self):

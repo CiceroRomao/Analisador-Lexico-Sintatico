@@ -1,4 +1,3 @@
-from lib2to3.pgen2 import token
 import pandas
 
 class Sintatico:
@@ -8,19 +7,6 @@ class Sintatico:
         self.AnaliseSintatica = pandas.DataFrame(columns=["Lexema","Padrão","Token","Linha"])
         self.errosSintaticos = pandas.DataFrame(columns=["Lexema","Padrão","Token","Linha"])
         
-        self.structMain = [ 
-            "public",
-            "static",
-            "void",
-            "main",
-            "(",
-            "String",
-            "[",
-            "]",
-            "id",
-            ")",
-            "{",
-        ]
         
         self.reservedStrings = [
             "boolean",
@@ -51,12 +37,20 @@ class Sintatico:
             "float"
         ]
         
-        self.operatorsInic = [
+        
+        self.structPublicMain = [
+            "public",
+            "static",
+            "void",
+            "main",
             "(",
+            "String",
             "[",
+            "]",
+            "a",
+            ")",
             "{"
         ]
-        
         
         self.operators = [
             "(",
@@ -98,10 +92,8 @@ class Sintatico:
         self.confereOp()   
             
         #converte o datagrama para arquivo de texto
-        #self.errosSintaticos.to_csv(r'Análise Sintática.txt', header=None, index=None, sep=' ', mode='a')
-        print(self.AnaliseSintatica)
-        print(self.errosSintaticos)
-        print(self.operators)
+        self.errosSintaticos.to_csv(r'Análise Sintática.txt', header=None, index=None, sep=' ', mode='a')
+        
                 
                 
           
@@ -127,15 +119,20 @@ class Sintatico:
                                 if tokenAtual == "public":
                                     if tokenPosterior == "static":
                                         self.confereStructPublic(tokenAtual, numLinhas)
-                                        #CORRIGIR ELIF ABAIXO TEM QUE 
-                                    elif tokenPosterior not in self.reservedStrings and tokenPosterior not in self.operators:
-                                        self.insereLinha(tokenAtual , numLinhas)      
                                         tokenAtual = ""
-                                        tokenPosterior = ""   
-                                    else:
+                                    elif tokenPosterior not in self.reservedStrings and tokenPosterior not in self.operators:
                                         self.insereErro(tokenPosterior , numLinhas)     
                                         tokenPosterior = ""                                      
+                                        tokenAtual = ""  
+                                    elif tokenPosterior in self.TiposIds:
+                                        self.insereLinha(tokenPosterior , numLinhas)     
+                                        tokenPosterior = ""                                      
                                         tokenAtual = ""
+                                    elif tokenPosterior in self.reservedStrings:
+                                        self.insereLinha(tokenPosterior , numLinhas)     
+                                        tokenPosterior = ""                                      
+                                        tokenAtual = ""
+                                        
                                 else:                                        
                                     if tokenPosterior != None and str.isdigit(tokenPosterior):
                                         self.insereErro(tokenPosterior , numLinhas)     
@@ -195,6 +192,33 @@ class Sintatico:
                                 self.insereLinha(tokenAtual, numLinhas)
                                 tokenAtual = ""
                     i += 1    
+     
+    
+    def confereStructPublic(self, token, numLinha):
+        auxFile = open(self.fileAux)
+        numLinhaAtual = 0
+        tokenAtual = ""
+        aux = 0
+        
+        for line in auxFile:
+            numLinhaAtual += 1
+            if numLinhaAtual == numLinha:
+                i = 0
+                while i < len(self.structPublicMain):
+                    if line[i] != "" and line[i] != " " and line[i] != "\n":
+                        tokenAtual += line [i]
+                        if line[i+1] == "" or line[i+1] == " " or line[i+1] == "/n":
+                            if tokenAtual != self.structPublicMain[aux]:
+                                if self.structPublicMain[aux] == "a":
+                                    self.insereLinha(tokenAtual, numLinhaAtual)    
+                                    aux += 1    
+                                else:
+                                    self.insereErro(tokenAtual, numLinhaAtual)
+                                    aux += 1
+                            else:
+                                self.insereLinha(tokenAtual, numLinhaAtual)    
+                                aux += 1
+                    i += 1
          
     
     def confereOp(self):
@@ -227,15 +251,7 @@ class Sintatico:
             i += 1                    
                 
         if contChavesAbertura != contChavesFechamento:
-            print("TO ENTRANDO AQUI 2")
-            print(contChavesAbertura)
-            print(contChavesFechamento)
-            print(contColcheteAbertura)
-            print(contColcheteFechamento)
-            print(contParentsAbertura)
-            print(contParentsFechamento)
             if contChavesAbertura > contChavesFechamento:
-                print("TO ENTRANDO AQUI 3")
                 auxFile = open(self.fileAux)
                 numLinha = 0
                 for line in auxFile:
@@ -244,11 +260,10 @@ class Sintatico:
                     token = ""
                     while i < len(line):
                         if line[i] != "" and line[i] != " " and line[i] != "\n":
-                            print(token)
                             token += line[i]
                             if token == "{":
                                 self.errosSintaticos = self.errosSintaticos.append(
-                                {"Lexema": token,"Padrão":"ErroAoFechar","Token":"<"+str(token)+","+ str(numLinha) +">" ,"Linha": numLinha},
+                                {"Lexema": token,"Padrão":"ErroAoAbrir","Token":"<"+str(token)+","+ str(numLinha) +">" ,"Linha": numLinha},
                                 ignore_index=True)
                                 token = ""
                             elif token in self.reservedStrings or token in self.operators:
@@ -283,12 +298,104 @@ class Sintatico:
                             elif line[i] == "" and line[i] == " " and line[i] == "\n":
                                 token = ""
                         i += 1
-                            
-            print("")
+  
         elif contParentsAbertura != contParentsFechamento:
-            print("")
+            if contParentsAbertura > contParentsFechamento:
+                auxFile = open(self.fileAux)
+                numLinha = 0
+                for line in auxFile:
+                    numLinha += 1
+                    i = 0
+                    token = ""
+                    while i < len(line):
+                        if line[i] != "" and line[i] != " " and line[i] != "\n":
+                            token += line[i]
+                            if token == "(":
+                                self.errosSintaticos = self.errosSintaticos.append(
+                                {"Lexema": token,"Padrão":"ErroAoAbrir","Token":"<"+str(token)+","+ str(numLinha) +">" ,"Linha": numLinha},
+                                ignore_index=True)
+                                token = ""
+                            elif token in self.reservedStrings or token in self.operators:
+                                token =""    
+                            elif str.isdigit(token):
+                                token = ""
+                            elif line[i+1] == "" or line[i+1] == " " or line[i+1] == "\n":
+                                token = ""
+                            elif line[i+1] in self.operators:
+                                token = ""
+                        i += 1
+                        
+            elif contParentsAbertura < contParentsFechamento:                     
+                auxFile = open(self.fileAux)
+                numLinha = 0
+                for line in auxFile:
+                    numLinha += 1
+                    i = 0
+                    token = ""
+                    while i < len(line):
+                        if line[i] != "" and line[i] != " " and line[i] != "\n":
+                            token += line[i]
+                            if token == ")":
+                                self.errosSintaticos = self.errosSintaticos.append(
+                                {"Lexema": token,"Padrão":"ErroAoFechar","Token":"<"+str(token)+","+ str(numLinha) +">" ,"Linha": numLinha},
+                                ignore_index=True)
+                                token = ""
+                            elif token in self.reservedStrings or token in self.operators:
+                                token =""    
+                            elif str.isdigit(token):
+                                token = ""
+                            elif line[i] == "" and line[i] == " " and line[i] == "\n":
+                                token = ""
+                        i += 1
+           
         elif contColcheteAbertura != contColcheteFechamento:    
-            print("")     
+            if contColcheteAbertura > contColcheteFechamento:
+                auxFile = open(self.fileAux)
+                numLinha = 0
+                for line in auxFile:
+                    numLinha += 1
+                    i = 0
+                    token = ""
+                    while i < len(line):
+                        if line[i] != "" and line[i] != " " and line[i] != "\n":
+                            token += line[i]
+                            if token == "[":
+                                self.errosSintaticos = self.errosSintaticos.append(
+                                {"Lexema": token,"Padrão":"ErroAoAbrir","Token":"<"+str(token)+","+ str(numLinha) +">" ,"Linha": numLinha},
+                                ignore_index=True)
+                                token = ""
+                            elif token in self.reservedStrings or token in self.operators:
+                                token =""    
+                            elif str.isdigit(token):
+                                token = ""
+                            elif line[i+1] == "" or line[i+1] == " " or line[i+1] == "\n":
+                                token = ""
+                            elif line[i+1] in self.operators:
+                                token = ""
+                        i += 1
+                        
+            elif contColcheteAbertura < contColcheteFechamento:                     
+                auxFile = open(self.fileAux)
+                numLinha = 0
+                for line in auxFile:
+                    numLinha += 1
+                    i = 0
+                    token = ""
+                    while i < len(line):
+                        if line[i] != "" and line[i] != " " and line[i] != "\n":
+                            token += line[i]
+                            if token == "]":
+                                self.errosSintaticos = self.errosSintaticos.append(
+                                {"Lexema": token,"Padrão":"ErroAoFechar","Token":"<"+str(token)+","+ str(numLinha) +">" ,"Linha": numLinha},
+                                ignore_index=True)
+                                token = ""
+                            elif token in self.reservedStrings or token in self.operators:
+                                token =""    
+                            elif str.isdigit(token):
+                                token = ""
+                            elif line[i] == "" and line[i] == " " and line[i] == "\n":
+                                token = ""
+                        i += 1   
         
     
                  
@@ -399,7 +506,3 @@ class Sintatico:
         self.file.close()
                 
    
-    #função para fechar arquivo aberto
-    def close(self):
-        self.file.close()
-        
